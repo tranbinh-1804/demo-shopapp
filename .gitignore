@@ -1,0 +1,38 @@
+# linh tinh
+database.sql
+database_cp.sql
+
+# Ignore compiled Java files
+*.class
+
+# Ignore Maven build directory
+target/
+
+# Ignore IDE files (example for IntelliJ, VS Code)
+.idea/
+.vscode/
+*.iml
+*.ipr
+*.iws
+
+# Ignore OS specific files
+.DS_Store
+Thumbs.db
+
+# Ignore sensitive environment files
+.env
+.env.*
+
+# Ignore logs
+*.log
+
+# Spring Boot specific ignore patterns (optional, depend on specific setup)
+# build/ # if using Gradle instead of Maven, ignore build folder
+# src/main/resources/application*.yml # if you have local variants you don't commit
+# src/main/resources/application*.properties # same as above
+
+# Don't ignore the source code and resource files which are part of the project
+!/src/main/java/
+!/src/main/resources/
+!/src/test/java/
+!/src/test/resources/
