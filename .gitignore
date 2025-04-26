@@ -1,6 +1,5 @@
 # linh tinh
-database.sql
-database_cp.sql
+
 
 # Ignore compiled Java files
 *.class
