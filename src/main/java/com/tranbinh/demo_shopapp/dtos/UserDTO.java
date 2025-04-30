@@ -2,6 +2,7 @@ package com.tranbinh.demo_shopapp.dtos;
 
 import com.fasterxml.jackson.annotation.JsonFormat; // Thêm import này
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.tranbinh.demo_shopapp.entities.Role;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
@@ -53,5 +54,5 @@ public class UserDTO {
 
     @NotNull(message = "Role ID is required")
     @JsonProperty("role_id")
-    private int roleId;
+    private Long roleId;
 }

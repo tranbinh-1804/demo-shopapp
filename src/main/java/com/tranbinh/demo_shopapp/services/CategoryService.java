@@ -33,7 +33,12 @@ public class CategoryService implements ICategoryService{
 
     @Override
     public CategoryDTO createCategory(CategoryDTO categoryDTO) {
-        Category newCategory = mapDTOToCategory(categoryDTO);
+        if(categoryDTO.getId() != null){
+            throw new IllegalArgumentException("Category ID must be null when creating a new category");
+        }
+
+        Category newCategory = Category.builder()
+                .name(categoryDTO.getName()).build();
         Category savedCategory = categoryRepository.save(newCategory);
         return mapCategoryToDTO(savedCategory);
     }

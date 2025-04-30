@@ -1,9 +1,8 @@
 package com.tranbinh.demo_shopapp.controllers;
 
 import com.tranbinh.demo_shopapp.dtos.CategoryDTO;
-import com.tranbinh.demo_shopapp.entities.Category;
 import com.tranbinh.demo_shopapp.exceptions.DataNotFoundException;
-import com.tranbinh.demo_shopapp.services.CategoryService;
+import com.tranbinh.demo_shopapp.services.ICategoryService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -20,7 +19,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class CategoryController {
 
-    private final CategoryService categoryService;
+    private final ICategoryService categoryService;
 
     @GetMapping("")
     public ResponseEntity<List<CategoryDTO>> getAllCategories() {
