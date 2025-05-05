@@ -4,6 +4,7 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
+import lombok.Data;
 import lombok.NoArgsConstructor;
 
 @Entity
@@ -11,6 +12,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @Table(name = "roles")
 @Builder
+@Data
 public class Role {
     @Id
     private Long id;

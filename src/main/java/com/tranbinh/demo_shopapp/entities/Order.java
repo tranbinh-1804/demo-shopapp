@@ -3,6 +3,7 @@ package com.tranbinh.demo_shopapp.entities;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
+import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
@@ -12,6 +13,7 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @Table(name = "orders")
 @Builder
+@Data
 
 public class Order {
     @Id

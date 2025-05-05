@@ -3,6 +3,7 @@ package com.tranbinh.demo_shopapp.entities;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
+import lombok.Data;
 import lombok.NoArgsConstructor;
 
 @Entity
@@ -10,6 +11,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @Table(name = "products")
 @Builder
+@Data
 public class Product extends BaseEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
