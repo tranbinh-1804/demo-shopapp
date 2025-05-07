@@ -22,3 +22,5 @@ spring:
       max-request-size: 100MB
 api:
   prefix: /api/v1
+uploads:
+  path: uploads
