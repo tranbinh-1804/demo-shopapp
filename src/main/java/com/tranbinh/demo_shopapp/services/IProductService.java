@@ -1,12 +1,10 @@
 package com.tranbinh.demo_shopapp.services;
 
 import com.tranbinh.demo_shopapp.dtos.ProductDTO;
-import com.tranbinh.demo_shopapp.entities.Product;
 import com.tranbinh.demo_shopapp.exceptions.DataNotFoundException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.stereotype.Service;
-
+import org.springframework.http.ResponseEntity;
 
 public interface IProductService {
     /**

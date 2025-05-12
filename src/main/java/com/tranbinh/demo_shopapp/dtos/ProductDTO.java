@@ -15,6 +15,8 @@ import java.util.List;
 @AllArgsConstructor
 @NoArgsConstructor
 public class ProductDTO {
+    private Long id;
+
     @NotBlank(message = "Product name cannot be blank")
     @Size(min = 3, max = 200, message = "Product name must be between 3 and 200 characters")
     private String name;
@@ -36,4 +38,7 @@ public class ProductDTO {
     private Long categoryId;
 
     private List<MultipartFile> files;
+
+    @JsonProperty("image_urls")
+    private List<String> imageUrls;
 }

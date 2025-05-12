@@ -53,7 +53,7 @@ public class FileStorageService implements IFileStorageService {
         }
         String originalFileName = StringUtils.cleanPath(Objects.requireNonNull(file.getOriginalFilename()));
 
-        String uniqueFileName = UUID.randomUUID().toString() + "_" + originalFileName;
+        String uniqueFileName = UUID.randomUUID() + "_" + originalFileName;
 
         if (originalFileName.contains("..")) {
             throw new IOException(
