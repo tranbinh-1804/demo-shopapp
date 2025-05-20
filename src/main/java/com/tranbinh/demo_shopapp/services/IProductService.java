@@ -2,6 +2,7 @@ package com.tranbinh.demo_shopapp.services;
 
 import com.tranbinh.demo_shopapp.dtos.ProductDTO;
 import com.tranbinh.demo_shopapp.exceptions.DataNotFoundException;
+import com.tranbinh.demo_shopapp.responses.ProductResponse;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.ResponseEntity;
@@ -43,7 +44,7 @@ public interface IProductService {
      * @return DTO của sản phẩm.
      * @throws DataNotFoundException Nếu không tìm thấy sản phẩm với ID đã cho.
      */
-    ProductDTO getProductById(Long id) throws DataNotFoundException;
+    ProductResponse getProductById(Long id) throws DataNotFoundException;
 
     /**
      * Lấy danh sách tất cả sản phẩm theo phân trang.
@@ -51,7 +52,7 @@ public interface IProductService {
      * @param pageRequest Thông tin phân trang (số trang, kích thước trang).
      * @return Danh sách sản phẩm đã được phân trang.
      */
-    Page<ProductDTO> getAllProducts(PageRequest pageRequest);
+    Page<ProductResponse> getAllProducts(PageRequest pageRequest);
 
     /**
      * Kiểm tra xem sản phẩm có tồn tại với tên đã cho hay không.

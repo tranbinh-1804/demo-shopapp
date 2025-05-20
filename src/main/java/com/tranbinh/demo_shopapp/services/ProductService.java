@@ -1,5 +1,6 @@
 package com.tranbinh.demo_shopapp.services;
 
+import com.tranbinh.demo_shopapp.dtos.CategoryDTO;
 import com.tranbinh.demo_shopapp.dtos.ProductDTO;
 import com.tranbinh.demo_shopapp.entities.Category;
 import com.tranbinh.demo_shopapp.entities.Product;
@@ -8,6 +9,7 @@ import com.tranbinh.demo_shopapp.exceptions.DataNotFoundException;
 import com.tranbinh.demo_shopapp.repositories.CategoryRepository;
 import com.tranbinh.demo_shopapp.repositories.ProductImageRepository;
 import com.tranbinh.demo_shopapp.repositories.ProductRepository;
+import com.tranbinh.demo_shopapp.responses.ProductResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
@@ -30,6 +32,17 @@ public class ProductService implements IProductService {
     private final ProductImageRepository productImageRepository;
     private final FileStorageService fileStorageService;
 
+    /**
+     * Creates a new product with the provided details.
+     * This method handles the creation of a product including its images and thumbnail.
+     *
+     * @param productDTO DTO containing product information and optional image files
+     * @return ProductDTO representing the created product with saved image URLs
+     * @throws DataIntegrityViolationException if product name already exists
+     * @throws DataNotFoundException           if specified category is not found
+     * @throws IllegalArgumentException        if uploaded files are invalid (size > 10MB or non-image type)
+     * @throws Exception                       for other unexpected errors during creation
+     */
     @Override
     @Transactional
     public ProductDTO createProduct(ProductDTO productDTO) throws Exception {
@@ -38,12 +51,16 @@ public class ProductService implements IProductService {
             throw new DataIntegrityViolationException("Product name already exists");
         }
 
+        if (productDTO.getCategory() == null || productDTO.getCategory().getId() == null) {
+            throw new IllegalArgumentException("Category ID must be provided within the category object.");
+        }
+
         // Tìm category theo categoryId từ DTO
         Category existingCategory = categoryRepository
-                .findById(productDTO.getCategoryId())
+                .findById(productDTO.getCategory().getId())
                 .orElseThrow(() ->
                         new DataNotFoundException(
-                                "Cannot find category with id: " + productDTO.getCategoryId()));
+                                "Cannot find category with id: " + productDTO.getCategory().getId()));
 
         // Tạo đối tượng Product từ DTO và Category đã tìm thấy
         Product newProduct = Product.builder()
@@ -54,71 +71,88 @@ public class ProductService implements IProductService {
                 .category(existingCategory)
                 .build();
 
-        // Lưu sản phẩm mới vào database
-        Product savedProduct = productRepository.save(newProduct);
+        newProduct.setProductImages(new ArrayList<>());
+        // Product savedProduct = productRepository.save(newProduct);
 
-        List<String> savedImageUrls = new ArrayList<>();
         List<MultipartFile> files = productDTO.getFiles();
 
         if (files != null && !files.isEmpty()) {
+            if (files.size() > ProductImage.MAX_IMAGES_PER_PRODUCT) {
+                throw new IllegalArgumentException("Maximum number of images allowed is 5");
+            }
             for (int i = 0; i < files.size(); i++) {
                 MultipartFile file = files.get(i);
                 if (file != null && !file.isEmpty()) {
-                    if (file.getSize() > 10 * 1024 * 1024) { // 10MB
-                        throw new IllegalArgumentException(
-                                "File size exceeds the limit of 10MB for file: " + file.getOriginalFilename());
-                    }
-                    String contentType = file.getContentType();
-                    if (contentType == null || !contentType.startsWith("image/")) {
-                        throw new IllegalArgumentException(
-                                "Invalid file type. Only image files are allowed for file: "
-                                        + file.getOriginalFilename());
-                    }
+                    validateImageFiles(file);
                     String fileName = fileStorageService.storeFile(file);
-                    if (i == 0 && (savedProduct.getThumbnail() == null || savedProduct.getThumbnail().isEmpty())) {
+                    if (i == 0 && (newProduct.getThumbnail() == null || newProduct.getThumbnail().isEmpty())) {
                         // Chỉ đặt thumbnail nếu nó chưa được set từ productDTO ban đầu hoặc đây là ảnh đầu tiên
-                        savedProduct.setThumbnail(fileName);
+                        newProduct.setThumbnail(fileName);
                         // Lưu lại product để cập nhật thumbnail nếu nó được set từ file đầu tiên
                         // Cân nhắc: Nếu productDTO.getThumbnail() đã có giá trị, có thể không muốn ghi đè ở đây.
                         // Hoặc chỉ cập nhật thumbnail nếu productDTO.getThumbnail() là rỗng.
                         // Hiện tại, nếu productDTO.getThumbnail() đã có, nó sẽ bị ghi đè bởi ảnh đầu tiên trong list files.
-                        savedProduct = productRepository.save(savedProduct);
                     }
                     ProductImage productImage = ProductImage.builder()
-                            .product(savedProduct)
+                            .product(newProduct)
                             .imageUrl(fileName)
                             .build();
-                    productImageRepository.save(productImage);
-                    savedImageUrls.add(fileName);
+                    newProduct.getProductImages().add(productImage);
                 }
             }
         }
-
+        Product savedProduct = productRepository.save(newProduct);
         // Tạo ProductDTO để trả về cho client
-        return mapProductToDTO(savedProduct, savedImageUrls);
+        return mapProductToDTO(savedProduct);
     }
 
+    /**
+     * Retrieves a paginated list of all products.
+     *
+     * @param pageRequest Pagination and sorting parameters
+     * @return Page of ProductDTO containing product information
+     */
     @Override
-    public Page<ProductDTO> getAllProducts(PageRequest pageRequest) {
-        Page<Product> products = productRepository.findAll(pageRequest);
-        return products.map(this::mapProductToDTO); // Sẽ gọi mapProductToDTO(Product product)
+    public Page<ProductResponse> getAllProducts(PageRequest pageRequest) {
+        Page<Product> productsPage = productRepository.findAll(pageRequest);
+        return productsPage.map(product -> ProductResponse.builder()
+                .id(product.getId())
+                .name(product.getName())
+                .categoryName(product.getCategory().getName())
+                .price(product.getPrice())
+                .thumbnail(product.getThumbnail())
+                .description(product.getDescription())
+                .createdAt(product.getCreatedAt())
+                .updatedAt(product.getUpdatedAt())
+                .build()
+        );
     }
 
+    /**
+     * Updates an existing product with new information.
+     * This method allows updating product details including name, price, description,
+     * category, thumbnail and product images.
+     *
+     * @param id         The ID of the product to update
+     * @param productDTO The DTO containing updated product information
+     * @return Updated product converted to DTO
+     * @throws DataNotFoundException    If product with given ID or category is not found
+     * @throws IllegalArgumentException If uploaded files are invalid (size > 10MB or non-image type)
+     * @throws Exception                For other unexpected errors during update
+     */
     @Override
     @Transactional
     public ProductDTO updateProduct(Long id, ProductDTO productDTO) throws Exception {
         Product existingProduct = productRepository.findById(id)
                 .orElseThrow(() -> new DataNotFoundException("Cannot find product with id: " + id));
 
-        // Kiểm tra và cập nhật category
-        Category existingCategory = existingProduct.getCategory();
-        if (productDTO.getCategoryId() != null && (existingCategory == null
-                || !existingCategory.getId().equals(productDTO.getCategoryId()))) {
-            existingCategory = categoryRepository.findById(productDTO.getCategoryId())
-                    .orElseThrow(() -> new DataNotFoundException(
-                            "Cannot find category with id: " + productDTO.getCategoryId()));
-            existingProduct.setCategory(existingCategory);
+        if (productDTO.getCategory() != null && productDTO.getCategory().getId() != null) {
+            Long newCategoryId = productDTO.getCategory().getId();
+            Category newCategory = categoryRepository.findById(newCategoryId)
+                    .orElseThrow(() -> new DataNotFoundException("Cannot find category with id: " + newCategoryId));
+            existingProduct.setCategory(newCategory);
         }
+
 
         // Cập nhật các trường khác
         existingProduct.setName(productDTO.getName());
@@ -137,32 +171,22 @@ public class ProductService implements IProductService {
 
         // Xử lý danh sách file ảnh mới (nếu có)
         List<MultipartFile> files = productDTO.getFiles();
+
         if (files != null && !files.isEmpty()) {
-            // Cân nhắc: bạn có muốn xóa các ảnh cũ trước khi thêm ảnh mới không?
-            // Hoặc chỉ thêm ảnh mới vào danh sách hiện có?
-            // Logic này cần được định nghĩa rõ ràng.
-            // Giả sử ở đây chúng ta chỉ thêm ảnh mới.
-            List<String> newImageUrls = new ArrayList<>();
+            if (files.size() > ProductImage.MAX_IMAGES_PER_PRODUCT) {
+                throw new IllegalArgumentException("Maximum number of images allowed is 5");
+            }
             for (int i = 0; i < files.size(); i++) {
                 MultipartFile file = files.get(i);
                 if (file != null && !file.isEmpty()) {
-                    if (file.getSize() > 10 * 1024 * 1024) { // 10MB
-                        throw new IllegalArgumentException(
-                                "File size exceeds the limit of 10MB for file: " + file.getOriginalFilename());
-                    }
-                    String contentType = file.getContentType();
-                    if (contentType == null || !contentType.startsWith("image/")) {
-                        throw new IllegalArgumentException(
-                                "Invalid file type. Only image files are allowed for file: "
-                                        + file.getOriginalFilename());
-                    }
+                    validateImageFiles(file);
                     String fileName = fileStorageService.storeFile(file);
                     ProductImage productImage = ProductImage.builder()
                             .product(existingProduct)
                             .imageUrl(fileName)
                             .build();
                     productImageRepository.save(productImage);
-                    newImageUrls.add(fileName);
+                    existingProduct.getProductImages().add(productImage);
 
                     // Cập nhật thumbnail nếu đây là ảnh đầu tiên được upload VÀ thumbnail chưa có
                     // hoặc người dùng muốn ưu tiên ảnh upload
@@ -177,9 +201,17 @@ public class ProductService implements IProductService {
         }
 
         Product updatedProduct = productRepository.save(existingProduct);
-        return mapProductToDTO(updatedProduct); // Sẽ gọi mapProductToDTO(Product product) để lấy cả ảnh
+        return mapProductToDTO(updatedProduct);
     }
 
+    /**
+     * Deletes a product and its associated images.
+     * This method removes the product from database and deletes associated image files from storage.
+     *
+     * @param id The ID of the product to delete
+     * @throws DataNotFoundException if product with given ID is not found
+     * @throws Exception             if there's an error during deletion
+     */
     @Override
     public void deleteProduct(Long id) throws Exception {
         if (!productRepository.existsById(id)) {
@@ -203,45 +235,86 @@ public class ProductService implements IProductService {
         }
     }
 
+    /**
+     * Retrieves a product by its ID.
+     *
+     * @param id The ID of the product to retrieve
+     * @return ProductDTO containing product information
+     * @throws DataNotFoundException if product with given ID is not found
+     */
     @Override
-    public ProductDTO getProductById(Long id) throws DataNotFoundException {
+    public ProductResponse getProductById(Long id) throws DataNotFoundException {
         Product existingProduct = productRepository.findById(id)
                 .orElseThrow(() -> new DataNotFoundException("Product not found with id: " + id));
-        return mapProductToDTO(existingProduct); // Sẽ gọi mapProductToDTO(Product product) để lấy cả ảnh
+        return ProductResponse.builder()
+                .id(existingProduct.getId())
+                .name(existingProduct.getName())
+                .categoryName(existingProduct.getCategory().getName())
+                .price(existingProduct.getPrice())
+                .thumbnail(existingProduct.getThumbnail())
+                .description(existingProduct.getDescription())
+                .createdAt(existingProduct.getCreatedAt())
+                .updatedAt(existingProduct.getUpdatedAt())
+                .build(); // Sẽ gọi mapProductToDTO(Product product) để lấy cả ảnh
     }
 
+    /**
+     * Checks if a product with the given name exists.
+     *
+     * @param name The product name to check
+     * @return true if product exists, false otherwise
+     */
     @Override
     public boolean existsByName(String name) {
         return productRepository.existsByName(name);
     }
 
+    /**
+     * Maps a Product entity to ProductDTO including its image URLs.
+     *
+     * @param product The Product entity to map
+     * @return ProductDTO with mapped values and image URLs
+     */
     private ProductDTO mapProductToDTO(Product product) {
         if (product == null) {
             return null;
         }
+
+        CategoryDTO categoryDTO = null;
+        if (product.getCategory() != null) {
+            categoryDTO = CategoryDTO.builder()
+                    .id(product.getCategory().getId())
+                    .name(product.getCategory().getName())
+                    .build();
+        }
+
         List<String> imageUrls = product.getProductImages().stream()
                 .map(ProductImage::getImageUrl)
                 .collect(Collectors.toList());
-        return mapProductToDTO(product, imageUrls);
-    }
-
-    ProductDTO mapProductToDTO(Product product, List<String> imageUrls) {
-        if (product == null) {
-            return null;
-        }
-        ProductDTO.ProductDTOBuilder builder = ProductDTO.builder()
+        return ProductDTO.builder()
                 .id(product.getId())
                 .name(product.getName())
                 .price(product.getPrice())
                 .thumbnail(product.getThumbnail())
-                .description(product.getDescription());
+                .description(product.getDescription())
+                .category(categoryDTO)
+                .imageUrls(imageUrls)
+                .build();
+    }
 
-        if (product.getCategory() != null) {
-            builder.categoryId(product.getCategory().getId());
+    private void validateImageFiles(MultipartFile file) throws IllegalArgumentException {
+        if (file == null || file.isEmpty()) {
+            throw new IllegalArgumentException("No files uploaded");
         }
-
-        builder.imageUrls(imageUrls == null ? new ArrayList<>() : imageUrls); // Đảm bảo imageUrls không bao giờ là null
-
-        return builder.build();
+        if (file.getSize() > ProductImage.MAX_IMAGE_SIZE) {
+            throw new IllegalArgumentException(
+                    "File size exceeds the limit of " + (ProductImage.MAX_IMAGE_SIZE / (1024 * 1024))
+                            + "MB for file: " + file.getOriginalFilename());
+        }
+        String contentType = file.getContentType();
+        if (contentType == null || !contentType.startsWith("image/")) {
+            throw new IllegalArgumentException(
+                    "Invalid file type." + "Only images are allowed: " + file.getOriginalFilename());
+        }
     }
 }

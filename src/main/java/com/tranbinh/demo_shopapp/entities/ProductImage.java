@@ -13,6 +13,9 @@ import lombok.NoArgsConstructor;
 @Builder
 @Data
 public class ProductImage extends BaseEntity {
+    public static final int MAX_IMAGE_SIZE = 1024 * 1024 * 10;
+    public static final int MAX_IMAGES_PER_PRODUCT = 5;
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
