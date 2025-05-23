@@ -1,4 +1,4 @@
-package com.tranbinh.demo_shopapp.services;
+package com.tranbinh.demo_shopapp.services.product;
 
 import com.tranbinh.demo_shopapp.dtos.CategoryDTO;
 import com.tranbinh.demo_shopapp.dtos.ProductDTO;
@@ -9,7 +9,8 @@ import com.tranbinh.demo_shopapp.exceptions.DataNotFoundException;
 import com.tranbinh.demo_shopapp.repositories.CategoryRepository;
 import com.tranbinh.demo_shopapp.repositories.ProductImageRepository;
 import com.tranbinh.demo_shopapp.repositories.ProductRepository;
-import com.tranbinh.demo_shopapp.responses.ProductResponse;
+import com.tranbinh.demo_shopapp.responses.product.ProductResponse;
+import com.tranbinh.demo_shopapp.services.storage.FileStorageService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;

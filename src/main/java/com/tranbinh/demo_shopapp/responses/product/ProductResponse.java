@@ -1,8 +1,9 @@
-package com.tranbinh.demo_shopapp.responses;
+package com.tranbinh.demo_shopapp.responses.product;
 
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
+import com.tranbinh.demo_shopapp.responses.BaseResponse;
 import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;

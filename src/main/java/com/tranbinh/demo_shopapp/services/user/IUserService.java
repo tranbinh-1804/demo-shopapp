@@ -1,4 +1,4 @@
-package com.tranbinh.demo_shopapp.services;
+package com.tranbinh.demo_shopapp.services.user;
 
 import com.tranbinh.demo_shopapp.dtos.UserDTO;
 import com.tranbinh.demo_shopapp.entities.User;
@@ -13,9 +13,9 @@ public interface IUserService {
      *
      * @param userDTO Dữ liệu người dùng từ request.
      * @return Người dùng đã được tạo.
-     * @throws DataNotFoundException Nếu không tìm thấy vai trò (Role).
+     * @throws DataNotFoundException           Nếu không tìm thấy vai trò (Role).
      * @throws DataIntegrityViolationException Nếu username hoặc số điện thoại đã tồn tại.
-     * @throws Exception Các lỗi khác.
+     * @throws Exception                       Các lỗi khác.
      */
     User createUser(UserDTO userDTO) throws DataNotFoundException, DataIntegrityViolationException, Exception;
 

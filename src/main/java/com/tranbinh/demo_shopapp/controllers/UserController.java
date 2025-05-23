@@ -2,7 +2,7 @@ package com.tranbinh.demo_shopapp.controllers;
 
 import com.tranbinh.demo_shopapp.dtos.UserDTO;
 import com.tranbinh.demo_shopapp.dtos.UserLoginDTO;
-import com.tranbinh.demo_shopapp.services.IUserService;
+import com.tranbinh.demo_shopapp.services.user.IUserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;

@@ -1,4 +1,4 @@
-package com.tranbinh.demo_shopapp.services;
+package com.tranbinh.demo_shopapp.services.category;
 
 import com.tranbinh.demo_shopapp.dtos.CategoryDTO;
 import com.tranbinh.demo_shopapp.entities.Category;
@@ -11,12 +11,12 @@ import java.util.List;
 
 @Service
 @RequiredArgsConstructor
-public class CategoryService implements ICategoryService{
+public class CategoryService implements ICategoryService {
 
     private final CategoryRepository categoryRepository;
 
     // Helper method to map Category to CategoryDTO entity
-    private CategoryDTO mapCategoryToDTO(Category category){
+    private CategoryDTO mapCategoryToDTO(Category category) {
         return CategoryDTO.builder()
                 .id(category.getId())
                 .name(category.getName())
@@ -24,7 +24,7 @@ public class CategoryService implements ICategoryService{
     }
 
     // Helper method to map CategoryDTO to Category entity
-    private Category mapDTOToCategory(CategoryDTO categoryDTO){
+    private Category mapDTOToCategory(CategoryDTO categoryDTO) {
         return Category.builder()
                 .id(categoryDTO.getId())
                 .name(categoryDTO.getName())
@@ -33,7 +33,7 @@ public class CategoryService implements ICategoryService{
 
     @Override
     public CategoryDTO createCategory(CategoryDTO categoryDTO) {
-        if(categoryDTO.getId() != null){
+        if (categoryDTO.getId() != null) {
             throw new IllegalArgumentException("Category ID must be null when creating a new category");
         }
 
@@ -54,7 +54,7 @@ public class CategoryService implements ICategoryService{
 
     @Override
     public void deleteCategory(Long id) throws DataNotFoundException {
-        if(!categoryRepository.existsById(id)){
+        if (!categoryRepository.existsById(id)) {
             throw new DataNotFoundException("Category not found with id: " + id);
         }
         categoryRepository.deleteById(id);

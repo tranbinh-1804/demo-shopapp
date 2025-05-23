@@ -3,7 +3,7 @@ package com.tranbinh.demo_shopapp.controllers;
 import com.github.javafaker.Faker;
 import com.tranbinh.demo_shopapp.dtos.CategoryDTO;
 import com.tranbinh.demo_shopapp.exceptions.DataNotFoundException;
-import com.tranbinh.demo_shopapp.services.ICategoryService;
+import com.tranbinh.demo_shopapp.services.category.ICategoryService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;

@@ -1,6 +1,5 @@
-package com.tranbinh.demo_shopapp.responses;
+package com.tranbinh.demo_shopapp.responses.product;
 
-import com.tranbinh.demo_shopapp.dtos.ProductDTO;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;

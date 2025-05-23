@@ -1,7 +1,6 @@
-package com.tranbinh.demo_shopapp.services;
+package com.tranbinh.demo_shopapp.services.category;
 
 import com.tranbinh.demo_shopapp.dtos.CategoryDTO;
-import com.tranbinh.demo_shopapp.entities.Category;
 import com.tranbinh.demo_shopapp.exceptions.DataNotFoundException;
 
 import java.util.List;
