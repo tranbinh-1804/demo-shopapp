@@ -17,7 +17,7 @@ public interface IUserService {
      * @throws DataIntegrityViolationException Nếu username hoặc số điện thoại đã tồn tại.
      * @throws Exception                       Các lỗi khác.
      */
-    User createUser(UserDTO userDTO) throws DataNotFoundException, DataIntegrityViolationException, Exception;
+    UserDTO createUser(UserDTO userDTO) throws DataNotFoundException, DataIntegrityViolationException, Exception;
 
     /**
      * Đăng nhập người dùng.

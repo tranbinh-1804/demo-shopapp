@@ -18,7 +18,7 @@ public class UserService implements IUserService {
 
 
     @Override
-    public User createUser(UserDTO userDTO) throws Exception {
+    public UserDTO createUser(UserDTO userDTO) throws Exception {
         if (userRepository.existsByUsername(userDTO.getUsername())) {
             throw new DataIntegrityViolationException("Username already exists");
         }
@@ -36,14 +36,14 @@ public class UserService implements IUserService {
                 .address(userDTO.getAddress())
                 .email(userDTO.getEmail())
                 .username(userDTO.getUsername())
-                .password(userDTO.getPassword())
                 .dateOfBirth(userDTO.getDateOfBirth())
                 .facebookId(userDTO.getFacebookId())
                 .googleId(userDTO.getGoogleId())
                 .isActive(true)
                 .role(role)
                 .build();
-        return userRepository.save(newUser);
+        userRepository.save(newUser);
+        return UserDTO.fromEntity(newUser);
     }
 
     @Override

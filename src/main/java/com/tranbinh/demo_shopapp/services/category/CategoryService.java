@@ -15,22 +15,6 @@ public class CategoryService implements ICategoryService {
 
     private final CategoryRepository categoryRepository;
 
-    // Helper method to map Category to CategoryDTO entity
-    private CategoryDTO mapCategoryToDTO(Category category) {
-        return CategoryDTO.builder()
-                .id(category.getId())
-                .name(category.getName())
-                .build();
-    }
-
-    // Helper method to map CategoryDTO to Category entity
-    private Category mapDTOToCategory(CategoryDTO categoryDTO) {
-        return Category.builder()
-                .id(categoryDTO.getId())
-                .name(categoryDTO.getName())
-                .build();
-    }
-
     @Override
     public CategoryDTO createCategory(CategoryDTO categoryDTO) {
         if (categoryDTO.getId() != null) {
@@ -39,8 +23,8 @@ public class CategoryService implements ICategoryService {
 
         Category newCategory = Category.builder()
                 .name(categoryDTO.getName()).build();
-        Category savedCategory = categoryRepository.save(newCategory);
-        return mapCategoryToDTO(savedCategory);
+        categoryRepository.save(newCategory);
+        return CategoryDTO.fromEntity(newCategory);
     }
 
     @Override
@@ -49,7 +33,7 @@ public class CategoryService implements ICategoryService {
                 .orElseThrow(() -> new DataNotFoundException("Category not found with id: " + id));
         existingCategory.setName(categoryDTO.getName());
         Category updatedCategory = categoryRepository.save(existingCategory);
-        return mapCategoryToDTO(updatedCategory);
+        return CategoryDTO.fromEntity(updatedCategory);
     }
 
     @Override
@@ -64,7 +48,7 @@ public class CategoryService implements ICategoryService {
     public List<CategoryDTO> getAllCategories() {
         List<Category> categories = categoryRepository.findAll();
         return categories.stream()
-                .map(this::mapCategoryToDTO)
+                .map(CategoryDTO::fromEntity)
                 .toList();
     }
 
@@ -72,6 +56,6 @@ public class CategoryService implements ICategoryService {
     public CategoryDTO getCategoryById(Long id) throws DataNotFoundException {
         Category category = categoryRepository.findById(id)
                 .orElseThrow(() -> new DataNotFoundException("Category not found"));
-        return mapCategoryToDTO(category);
+        return CategoryDTO.fromEntity(category);
     }
 }

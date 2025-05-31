@@ -1,6 +1,9 @@
 package com.tranbinh.demo_shopapp.dtos;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.tranbinh.demo_shopapp.entities.Order;
+import com.tranbinh.demo_shopapp.entities.OrderDetail;
+import com.tranbinh.demo_shopapp.entities.Product;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
@@ -25,7 +28,7 @@ public class OrderDetailDTO {
 
     @NotNull(message = "Price is required")
     @Min(value = 0, message = "Price must be greater than or equal to 0")
-    private Long price;
+    private Float price;
 
     @NotNull(message = "Number of products is required")
     @JsonProperty("number_of_products")
@@ -35,8 +38,36 @@ public class OrderDetailDTO {
     @NotNull(message = "Total money is required")
     @JsonProperty("total_money")
     @Min(value = 0, message = "Total money must be greater than or equal to 0")
-    private Long totalMoney;
+    private Float totalMoney;
 
     // Color có thể để optional vì không phải sản phẩm nào cũng có màu sắc
     private String color;
+
+    public static OrderDetailDTO fromEntity(OrderDetail orderDetail) {
+        if (orderDetail == null) {
+            return null;
+        }
+
+        return OrderDetailDTO.builder()
+                .orderId(orderDetail.getOrder().getId())
+                .productId(orderDetail.getProduct().getId())
+                .price(orderDetail.getPrice())
+                .numberOfProducts(orderDetail.getNumberOfProducts())
+                .totalMoney(orderDetail.getTotalMoney())
+                .color(orderDetail.getColor())
+                .build();
+    }
+
+    public OrderDetail toEntity(Product product, Order order) {
+        return OrderDetail.builder()
+                .id(this.orderId)
+                .order(order)
+                .product(product)
+                .price(this.price)
+                .numberOfProducts(this.numberOfProducts)
+                .totalMoney(this.totalMoney)
+                .color(this.color)
+                .build();
+    }
+
 }
