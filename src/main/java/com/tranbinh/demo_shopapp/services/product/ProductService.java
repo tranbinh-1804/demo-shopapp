@@ -46,7 +46,7 @@ public class ProductService implements IProductService {
      */
     @Override
     @Transactional
-    public ProductDTO createProduct(ProductDTO productDTO) throws Exception {
+    public Product createProduct(ProductDTO productDTO) throws Exception {
         // Kiểm tra xem tên sản phẩm đã tồn tại chưa
         if (productRepository.existsByName(productDTO.getName())) {
             throw new DataIntegrityViolationException("Product name already exists");
@@ -102,9 +102,7 @@ public class ProductService implements IProductService {
                 }
             }
         }
-        Product savedProduct = productRepository.save(newProduct);
-        // Tạo ProductDTO để trả về cho client
-        return mapProductToDTO(savedProduct);
+        return productRepository.save(newProduct);
     }
 
     /**
@@ -114,19 +112,8 @@ public class ProductService implements IProductService {
      * @return Page of ProductDTO containing product information
      */
     @Override
-    public Page<ProductResponse> getAllProducts(PageRequest pageRequest) {
-        Page<Product> productsPage = productRepository.findAll(pageRequest);
-        return productsPage.map(product -> ProductResponse.builder()
-                .id(product.getId())
-                .name(product.getName())
-                .categoryName(product.getCategory().getName())
-                .price(product.getPrice())
-                .thumbnail(product.getThumbnail())
-                .description(product.getDescription())
-                .createdAt(product.getCreatedAt())
-                .updatedAt(product.getUpdatedAt())
-                .build()
-        );
+    public Page<Product> getAllProducts(PageRequest pageRequest) {
+        return productRepository.findAll(pageRequest);
     }
 
     /**
@@ -143,22 +130,21 @@ public class ProductService implements IProductService {
      */
     @Override
     @Transactional
-    public ProductDTO updateProduct(Long id, ProductDTO productDTO) throws Exception {
+    public Product updateProduct(Long id, ProductDTO productDTO) throws Exception {
         Product existingProduct = productRepository.findById(id)
                 .orElseThrow(() -> new DataNotFoundException("Cannot find product with id: " + id));
 
-        if (productDTO.getCategory() != null && productDTO.getCategory().getId() != null) {
-            Long newCategoryId = productDTO.getCategory().getId();
-            Category newCategory = categoryRepository.findById(newCategoryId)
-                    .orElseThrow(() -> new DataNotFoundException("Cannot find category with id: " + newCategoryId));
-            existingProduct.setCategory(newCategory);
+        if (productDTO.getName() != null) {
+            existingProduct.setName(productDTO.getName());
         }
 
+        if (productDTO.getPrice() != null) {
+            existingProduct.setPrice(productDTO.getPrice());
+        }
 
-        // Cập nhật các trường khác
-        existingProduct.setName(productDTO.getName());
-        existingProduct.setPrice(productDTO.getPrice());
-        existingProduct.setDescription(productDTO.getDescription());
+        if (productDTO.getDescription() != null) {
+            existingProduct.setDescription(productDTO.getDescription());
+        }
 
         // Xử lý thumbnail từ DTO (nếu có)
         // Nếu productDTO.getThumbnail() được cung cấp, nó sẽ được ưu tiên.
@@ -170,6 +156,14 @@ public class ProductService implements IProductService {
             existingProduct.setThumbnail(productDTO.getThumbnail());
         }
 
+        if (productDTO.getCategory() != null && productDTO.getCategory().getId() != null) {
+            Long newCategoryId = productDTO.getCategory().getId();
+            Category newCategory = categoryRepository.findById(newCategoryId)
+                    .orElseThrow(() -> new DataNotFoundException("Cannot find category with id: " + newCategoryId));
+            existingProduct.setCategory(newCategory);
+        }
+
+
         // Xử lý danh sách file ảnh mới (nếu có)
         List<MultipartFile> files = productDTO.getFiles();
 
@@ -177,8 +171,7 @@ public class ProductService implements IProductService {
             if (files.size() > ProductImage.MAX_IMAGES_PER_PRODUCT) {
                 throw new IllegalArgumentException("Maximum number of images allowed is 5");
             }
-            for (int i = 0; i < files.size(); i++) {
-                MultipartFile file = files.get(i);
+            for(MultipartFile file : files) {
                 if (file != null && !file.isEmpty()) {
                     validateImageFiles(file);
                     String fileName = fileStorageService.storeFile(file);
@@ -186,23 +179,12 @@ public class ProductService implements IProductService {
                             .product(existingProduct)
                             .imageUrl(fileName)
                             .build();
-                    productImageRepository.save(productImage);
                     existingProduct.getProductImages().add(productImage);
-
-                    // Cập nhật thumbnail nếu đây là ảnh đầu tiên được upload VÀ thumbnail chưa có
-                    // hoặc người dùng muốn ưu tiên ảnh upload
-                    if (i == 0 && (existingProduct.getThumbnail() == null ||
-                            existingProduct.getThumbnail().isEmpty() ||
-                            productDTO.getThumbnail() == null ||
-                            productDTO.getThumbnail().isEmpty())) {
-                        existingProduct.setThumbnail(fileName);
-                    }
                 }
             }
         }
 
-        Product updatedProduct = productRepository.save(existingProduct);
-        return mapProductToDTO(updatedProduct);
+        return productRepository.save(existingProduct);
     }
 
     /**
@@ -244,19 +226,9 @@ public class ProductService implements IProductService {
      * @throws DataNotFoundException if product with given ID is not found
      */
     @Override
-    public ProductResponse getProductById(Long id) throws DataNotFoundException {
-        Product existingProduct = productRepository.findById(id)
+    public Product getProductById(Long id) throws DataNotFoundException {
+        return productRepository.findById(id)
                 .orElseThrow(() -> new DataNotFoundException("Product not found with id: " + id));
-        return ProductResponse.builder()
-                .id(existingProduct.getId())
-                .name(existingProduct.getName())
-                .categoryName(existingProduct.getCategory().getName())
-                .price(existingProduct.getPrice())
-                .thumbnail(existingProduct.getThumbnail())
-                .description(existingProduct.getDescription())
-                .createdAt(existingProduct.getCreatedAt())
-                .updatedAt(existingProduct.getUpdatedAt())
-                .build(); // Sẽ gọi mapProductToDTO(Product product) để lấy cả ảnh
     }
 
     /**
@@ -270,38 +242,6 @@ public class ProductService implements IProductService {
         return productRepository.existsByName(name);
     }
 
-    /**
-     * Maps a Product entity to ProductDTO including its image URLs.
-     *
-     * @param product The Product entity to map
-     * @return ProductDTO with mapped values and image URLs
-     */
-    private ProductDTO mapProductToDTO(Product product) {
-        if (product == null) {
-            return null;
-        }
-
-        CategoryDTO categoryDTO = null;
-        if (product.getCategory() != null) {
-            categoryDTO = CategoryDTO.builder()
-                    .id(product.getCategory().getId())
-                    .name(product.getCategory().getName())
-                    .build();
-        }
-
-        List<String> imageUrls = product.getProductImages().stream()
-                .map(ProductImage::getImageUrl)
-                .collect(Collectors.toList());
-        return ProductDTO.builder()
-                .id(product.getId())
-                .name(product.getName())
-                .price(product.getPrice())
-                .thumbnail(product.getThumbnail())
-                .description(product.getDescription())
-                .category(categoryDTO)
-                .imageUrls(imageUrls)
-                .build();
-    }
 
     private void validateImageFiles(MultipartFile file) throws IllegalArgumentException {
         if (file == null || file.isEmpty()) {

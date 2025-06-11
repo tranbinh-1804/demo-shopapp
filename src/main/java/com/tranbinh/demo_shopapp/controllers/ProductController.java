@@ -3,6 +3,7 @@ package com.tranbinh.demo_shopapp.controllers;
 import com.github.javafaker.Faker;
 import com.tranbinh.demo_shopapp.dtos.CategoryDTO;
 import com.tranbinh.demo_shopapp.dtos.ProductDTO;
+import com.tranbinh.demo_shopapp.entities.Product;
 import com.tranbinh.demo_shopapp.exceptions.DataNotFoundException;
 import com.tranbinh.demo_shopapp.responses.product.ProductListResponse;
 import com.tranbinh.demo_shopapp.responses.product.ProductResponse;
@@ -51,7 +52,7 @@ public class ProductController {
             @RequestParam(name = "limit", defaultValue = "10") int limit
     ) {
         PageRequest pageRequest = PageRequest.of(page, limit, Sort.by("id").ascending());
-        Page<ProductResponse> productPage = productService.getAllProducts(pageRequest);
+        Page<Product> productPage = productService.getAllProducts(pageRequest);
         List<ProductResponse> products = productPage.getContent();
         int totalPages = productPage.getTotalPages();
         return ResponseEntity.ok(ProductListResponse.builder()

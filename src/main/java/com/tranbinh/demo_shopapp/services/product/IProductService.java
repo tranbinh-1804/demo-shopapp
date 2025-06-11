@@ -1,6 +1,7 @@
 package com.tranbinh.demo_shopapp.services.product;
 
 import com.tranbinh.demo_shopapp.dtos.ProductDTO;
+import com.tranbinh.demo_shopapp.entities.Product;
 import com.tranbinh.demo_shopapp.exceptions.DataNotFoundException;
 import com.tranbinh.demo_shopapp.responses.product.ProductResponse;
 import org.springframework.data.domain.Page;
@@ -11,21 +12,21 @@ public interface IProductService {
      * Tạo sản phẩm mới.
      *
      * @param productDTO Dữ liệu sản phẩm từ request.
-     * @return DTO của sản phẩm đã được tạo.
+     * @return entity của sản phẩm đã được tạo.
      * @throws Exception Các lỗi khác (ví dụ: validation, lỗi lưu trữ).
      */
-    ProductDTO createProduct(ProductDTO productDTO) throws Exception;
+    Product createProduct(ProductDTO productDTO) throws Exception;
 
     /**
      * Cập nhật thông tin sản phẩm.
      *
      * @param id         ID của sản phẩm cần cập nhật.
      * @param productDTO Dữ liệu cập nhật.
-     * @return DTO của sản phẩm đã được cập nhật.
+     * @return entity của sản phẩm đã được cập nhật.
      * @throws DataNotFoundException Nếu không tìm thấy sản phẩm với ID đã cho.
      * @throws Exception             Các lỗi khác.
      */
-    ProductDTO updateProduct(Long id, ProductDTO productDTO) throws DataNotFoundException, Exception;
+    Product updateProduct(Long id, ProductDTO productDTO) throws DataNotFoundException, Exception;
 
     /**
      * Xóa sản phẩm.
@@ -40,10 +41,10 @@ public interface IProductService {
      * Lấy thông tin sản phẩm theo ID.
      *
      * @param id ID của sản phẩm.
-     * @return DTO của sản phẩm.
+     * @return entity của sản phẩm.
      * @throws DataNotFoundException Nếu không tìm thấy sản phẩm với ID đã cho.
      */
-    ProductResponse getProductById(Long id) throws DataNotFoundException;
+    Product getProductById(Long id) throws DataNotFoundException;
 
     /**
      * Lấy danh sách tất cả sản phẩm theo phân trang.
@@ -51,7 +52,7 @@ public interface IProductService {
      * @param pageRequest Thông tin phân trang (số trang, kích thước trang).
      * @return Danh sách sản phẩm đã được phân trang.
      */
-    Page<ProductResponse> getAllProducts(PageRequest pageRequest);
+    Page<Product> getAllProducts(PageRequest pageRequest);
 
     /**
      * Kiểm tra xem sản phẩm có tồn tại với tên đã cho hay không.

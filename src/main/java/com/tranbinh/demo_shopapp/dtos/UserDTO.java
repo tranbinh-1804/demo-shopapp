@@ -38,12 +38,15 @@ public class UserDTO {
     @JsonProperty("email")
     private String email;
 
+    @JsonProperty("username")
     @NotBlank(message = "Username is required")
     private String username;
 
+    @JsonProperty("password")
     @NotBlank(message = "Password is required")
     private String password;
 
+    @JsonProperty("retype_password")
     @NotBlank(message = "Retype password is required")
     private String retypePassword;
 

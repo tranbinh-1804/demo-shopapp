@@ -3,6 +3,7 @@ package com.tranbinh.demo_shopapp.responses.product;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
+import com.tranbinh.demo_shopapp.entities.Product;
 import com.tranbinh.demo_shopapp.responses.BaseResponse;
 import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
@@ -41,5 +42,17 @@ public class ProductResponse extends BaseResponse {
     @JsonProperty("description")
     private String description;
 
+    public static ProductResponse fromEntity(Product product) {
+        return ProductResponse.builder()
+                .id(product.getId())
+                .name(product.getName())
+                .categoryName(product.getCategory().getName())
+                .price(product.getPrice())
+                .thumbnail(product.getThumbnail())
+                .description(product.getDescription())
+                .createdAt(product.getCreatedAt())
+                .updatedAt(product.getUpdatedAt())
+                .build();
+    }
 
 }
