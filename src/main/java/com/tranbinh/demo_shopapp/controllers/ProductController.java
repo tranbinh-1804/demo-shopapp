@@ -3,8 +3,10 @@ package com.tranbinh.demo_shopapp.controllers;
 import com.github.javafaker.Faker;
 import com.tranbinh.demo_shopapp.dtos.CategoryDTO;
 import com.tranbinh.demo_shopapp.dtos.ProductDTO;
+import com.tranbinh.demo_shopapp.entities.Category;
 import com.tranbinh.demo_shopapp.entities.Product;
 import com.tranbinh.demo_shopapp.exceptions.DataNotFoundException;
+import com.tranbinh.demo_shopapp.responses.ApiResponse;
 import com.tranbinh.demo_shopapp.responses.product.ProductListResponse;
 import com.tranbinh.demo_shopapp.responses.product.ProductResponse;
 import com.tranbinh.demo_shopapp.services.category.ICategoryService;
@@ -47,18 +49,28 @@ public class ProductController {
      * @return ResponseEntity containing list of products and total pages
      */
     @GetMapping("")
-    public ResponseEntity<ProductListResponse> getProducts(
+    public ResponseEntity<ApiResponse<ProductListResponse>> getProducts(
             @RequestParam(name = "page", defaultValue = "0") int page,
             @RequestParam(name = "limit", defaultValue = "10") int limit
     ) {
-        PageRequest pageRequest = PageRequest.of(page, limit, Sort.by("id").ascending());
-        Page<Product> productPage = productService.getAllProducts(pageRequest);
-        List<ProductResponse> products = productPage.getContent();
-        int totalPages = productPage.getTotalPages();
-        return ResponseEntity.ok(ProductListResponse.builder()
-                .productResponses(products)
-                .totalPages(totalPages)
-                .build());
+        try {
+            PageRequest pageRequest = PageRequest.of(page, limit, Sort.by("id").ascending());
+            Page<Product> productPage = productService.getAllProducts(pageRequest);
+            List<ProductResponse> products = productPage.getContent()
+                    .stream()
+                    .map(ProductResponse::fromEntity)
+                    .toList();
+            int totalPages = productPage.getTotalPages();
+            ProductListResponse productListResponse = ProductListResponse.builder()
+                    .productResponses(products)
+                    .totalPages(totalPages)
+                    .build();
+            return ResponseEntity.ok(ApiResponse.success(productListResponse, "Get products successfully."));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ApiResponse.error("Internal server error: " +
+                            e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR));
+        }
     }
 
     /**
@@ -68,13 +80,22 @@ public class ProductController {
      * @return ResponseEntity containing the product if found
      */
     @GetMapping("/{id}")
-    public ResponseEntity<?> getProductById(@PathVariable Long id) {
+    public ResponseEntity<ApiResponse<ProductResponse>> getProductById(@PathVariable Long id) {
+        if (id == null || id <= 0) {
+            return ResponseEntity.badRequest().body(
+                    ApiResponse.error("Invalid product ID", HttpStatus.BAD_REQUEST));
+        }
         try {
-            return ResponseEntity.ok(productService.getProductById(id));
+            Product product = productService.getProductById(id);
+            ProductResponse productResponse = ProductResponse.fromEntity(product);
+            return ResponseEntity.ok(ApiResponse.success(productResponse, "Get product successfully."));
         } catch (DataNotFoundException e) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(
+                    ApiResponse.error(e.getMessage(), HttpStatus.NOT_FOUND));
         } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
+                    ApiResponse.error("Internal server error: " + e.getMessage(),
+                            HttpStatus.INTERNAL_SERVER_ERROR));
         }
     }
 
@@ -87,7 +108,7 @@ public class ProductController {
      * @return ResponseEntity containing the created product or error messages
      */
     @PostMapping(value = "", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<?> createProduct(
+    public ResponseEntity<ApiResponse<ProductResponse>> createProduct(
             @Validated(OnProductSubmission.class) @ModelAttribute ProductDTO productDTO,
             BindingResult result
     ) {
@@ -96,19 +117,25 @@ public class ProductController {
                     .stream()
                     .map(FieldError::getDefaultMessage)
                     .toList();
-            return ResponseEntity.badRequest().body(errorMessages);
+            return ResponseEntity.badRequest().body(ApiResponse.error(
+                    "Invalid product data", HttpStatus.BAD_REQUEST, errorMessages));
         }
 
         try {
-            ProductDTO newProduct = productService.createProduct(productDTO);
-            return ResponseEntity.ok(newProduct);
+            Product newProduct = productService.createProduct(productDTO);
+            ProductResponse productResponse = ProductResponse.fromEntity(newProduct);
+            return ResponseEntity.status(HttpStatus.CREATED).body(
+                    ApiResponse.created(productResponse, "Product created successfully."));
         } catch (DataNotFoundException e) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(
+                    ApiResponse.error(e.getMessage(), HttpStatus.NOT_FOUND));
         } catch (IllegalArgumentException e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(
+                    ApiResponse.error(e.getMessage(), HttpStatus.BAD_REQUEST));
         } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).
-                    body("Error creating product: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
+                    ApiResponse.error("Error creating product: " + e.getMessage(),
+                            HttpStatus.INTERNAL_SERVER_ERROR));
         }
     }
 
@@ -122,28 +149,39 @@ public class ProductController {
      * @return ResponseEntity containing the updated product or error messages
      */
     @PutMapping(value = "/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<?> updateProduct(
+    public ResponseEntity<ApiResponse<ProductResponse>> updateProduct(
             @PathVariable Long id,
             @Validated(OnProductSubmission.class) @ModelAttribute ProductDTO productDTO,
             BindingResult result) {
+        if (id == null || id <= 0) {
+            return ResponseEntity.badRequest()
+                    .body(ApiResponse.error("Invalid product ID", HttpStatus.BAD_REQUEST));
+        }
+
         if (result.hasErrors()) {
             List<String> errorMessages = result.getFieldErrors()
                     .stream()
                     .map(FieldError::getDefaultMessage)
                     .toList();
-            return ResponseEntity.badRequest().body(errorMessages);
+            return ResponseEntity.badRequest().body(ApiResponse.error(
+                    "Invalid product data", HttpStatus.BAD_REQUEST, errorMessages));
         }
 
         try {
-            ProductDTO updatedProduct = productService.updateProduct(id, productDTO);
-            return ResponseEntity.ok(updatedProduct);
+            Product updatedProduct = productService.updateProduct(id, productDTO);
+            ProductResponse productResponse = ProductResponse.fromEntity(updatedProduct);
+            return ResponseEntity.ok(ApiResponse.success(
+                    productResponse, "update product successfully with id = " + id + "."));
         } catch (DataNotFoundException e) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(
+                    ApiResponse.error(e.getMessage(), HttpStatus.NOT_FOUND));
         } catch (IllegalArgumentException e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(
+                    ApiResponse.error(e.getMessage(), HttpStatus.BAD_REQUEST));
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("Error updating product: " + e.getMessage());
+                    .body(ApiResponse.error("Error updating product: " + e.getMessage(),
+                            HttpStatus.INTERNAL_SERVER_ERROR));
         }
     }
 
@@ -154,24 +192,33 @@ public class ProductController {
      * @return ResponseEntity containing success message or error details
      */
     @DeleteMapping("/{id}")
-    public ResponseEntity<?> deleteProduct(@PathVariable Long id) {
+    public ResponseEntity<ApiResponse<Void>> deleteProduct(@PathVariable Long id) {
         try {
             productService.deleteProduct(id);
-            return ResponseEntity.ok("Delete product successfully with id = " + id);
+            return ResponseEntity.ok(ApiResponse.success(null,
+                    "Delete product successfully with id = " + id));
         } catch (DataNotFoundException e) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(ApiResponse.error(e.getMessage(), HttpStatus.NOT_FOUND));
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("Error deleting product: " + e.getMessage());
+                    .body(ApiResponse.error("Error deleting product: " + e.getMessage(),
+                            HttpStatus.INTERNAL_SERVER_ERROR));
         }
     }
 
+    /**
+     * Generates fake product data for testing purposes.
+     * Creates multiple products with randomized data using Faker library.
+     *
+     * @return ResponseEntity containing success message or error details
+     */
     @PostMapping("/generateFakeProduct")
     private ResponseEntity<?> generateFakeProduct() {
         Faker faker = new Faker();
         Random random = new Random();
         List<ProductDTO> createdProducts = new java.util.ArrayList<>();
-        List<CategoryDTO> categories = categoryService.getAllCategories();
+        List<Category> categories = categoryService.getAllCategories();
         int numberOfProductToCreate = 1000;
         for (int i = 0; i < numberOfProductToCreate; i++) {
             String productName = faker.commerce().productName();
@@ -179,7 +226,8 @@ public class ProductController {
                 continue;
             }
 
-            CategoryDTO categoryDTO = categories.get(random.nextInt(categories.size()));
+            Category category = categories.get(random.nextInt(categories.size()));
+            CategoryDTO categoryDTO = CategoryDTO.fromEntity(category);
             ProductDTO productDTO = ProductDTO.builder()
                     .name(productName)
                     .price((float) Math.round(faker.number().randomDouble(2, 10, 5000) * 100) / 100)
@@ -191,7 +239,8 @@ public class ProductController {
                 productService.createProduct(productDTO);
                 createdProducts.add(productDTO);
             } catch (DataIntegrityViolationException e) {
-                System.err.println("Could not create fake product due to integrity violation (possibly duplicate name): " + productDTO.getName() + ". Error: " + e.getMessage());
+                System.err.println("Could not create fake product due to integrity violation (possibly duplicate name): "
+                        + productDTO.getName() + ". Error: " + e.getMessage());
             } catch (Exception e) {
                 System.err.println("Error creating fake product: " + productDTO.getName() + ". Error: " + e.getMessage());
                 // Xử lý lỗi (ví dụ: ghi log)

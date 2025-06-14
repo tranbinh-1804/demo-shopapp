@@ -28,15 +28,15 @@ public class OrderController {
             @Valid @RequestBody OrderDTO orderDTO,
             BindingResult result
     ) {
+        if (result.hasErrors()) {
+            List<String> errorMessages = result.getFieldErrors().stream()
+                    .map(FieldError::getDefaultMessage)
+                    .toList();
+            return ResponseEntity.badRequest().body(
+                    ApiResponse.error("Validation failed", HttpStatus.BAD_REQUEST, errorMessages)
+            );
+        }
         try {
-            if (result.hasErrors()) {
-                List<String> errorMessages = result.getFieldErrors().stream()
-                        .map(FieldError::getDefaultMessage)
-                        .toList();
-                return ResponseEntity.badRequest().body(
-                        ApiResponse.error("Validation failed", HttpStatus.BAD_REQUEST, errorMessages)
-                );
-            }
 
             OrderDTO createOrderDTO = orderService.createOrder(orderDTO);
             OrderResponse orderResponse = OrderResponse.fromDTO(createOrderDTO);
@@ -57,11 +57,11 @@ public class OrderController {
 
     @GetMapping("/{id}")
     public ResponseEntity<ApiResponse<OrderResponse>> getOrderById(@PathVariable("id") Long id) {
+        if (id == null || id <= 0) {
+            return ResponseEntity.badRequest()
+                    .body(ApiResponse.error("Invalid order ID", HttpStatus.BAD_REQUEST));
+        }
         try {
-            if (id == null || id <= 0) {
-                return ResponseEntity.badRequest()
-                        .body(ApiResponse.error("Invalid order ID", HttpStatus.BAD_REQUEST));
-            }
             OrderDTO orderDTO = orderService.getOrderById(id);
             OrderResponse orderResponse = OrderResponse.fromDTO(orderDTO);
             return ResponseEntity.ok(ApiResponse.success(orderResponse, "Order found successfully"));
@@ -79,11 +79,11 @@ public class OrderController {
     public ResponseEntity<ApiResponse<List<OrderResponse>>> getOrdersByUserId(
             @PathVariable("user_id") Long user_id
     ) {
+        if (user_id == null || user_id <= 0) {
+            return ResponseEntity.badRequest()
+                    .body(ApiResponse.error("Invalid user ID", HttpStatus.BAD_REQUEST));
+        }
         try {
-            if (user_id == null || user_id <= 0) {
-                return ResponseEntity.badRequest()
-                        .body(ApiResponse.error("Invalid user ID", HttpStatus.BAD_REQUEST));
-            }
             List<OrderDTO> orderDTOS = orderService.getOrdersByUserId(user_id);
             List<OrderResponse> orderResponses = orderDTOS.stream()
                     .map(OrderResponse::fromDTO)
@@ -108,20 +108,20 @@ public class OrderController {
             @Valid @RequestBody OrderDTO orderDTO,
             BindingResult result
     ) {
-        try {
-            if (id == null || id <= 0) {
-                return ResponseEntity.badRequest()
-                        .body(ApiResponse.error("Invalid order ID", HttpStatus.BAD_REQUEST));
-            }
+        if (id == null || id <= 0) {
+            return ResponseEntity.badRequest()
+                    .body(ApiResponse.error("Invalid order ID", HttpStatus.BAD_REQUEST));
+        }
 
-            if (result.hasErrors()) {
-                List<String> errorMessages = result.getFieldErrors().stream()
-                        .map(FieldError::getDefaultMessage)
-                        .toList();
-                return ResponseEntity.badRequest().body(
-                        ApiResponse.error("Validation failed", HttpStatus.BAD_REQUEST, errorMessages)
-                );
-            }
+        if (result.hasErrors()) {
+            List<String> errorMessages = result.getFieldErrors().stream()
+                    .map(FieldError::getDefaultMessage)
+                    .toList();
+            return ResponseEntity.badRequest().body(
+                    ApiResponse.error("Validation failed", HttpStatus.BAD_REQUEST, errorMessages)
+            );
+        }
+        try {
             OrderDTO updatedOrder = orderService.updateOrder(id, orderDTO);
             OrderResponse orderResponse = OrderResponse.fromDTO(updatedOrder);
 
@@ -143,11 +143,11 @@ public class OrderController {
 
     @DeleteMapping("/{id}")
     public ResponseEntity<ApiResponse<String>> deleteOrder(@PathVariable Long id) {
+        if (id == null || id <= 0) {
+            return ResponseEntity.badRequest()
+                    .body(ApiResponse.error("Invalid order ID", HttpStatus.BAD_REQUEST));
+        }
         try {
-            if (id == null || id <= 0) {
-                return ResponseEntity.badRequest()
-                        .body(ApiResponse.error("Invalid order ID", HttpStatus.BAD_REQUEST));
-            }
             orderService.deleteOrder(id);
             return ResponseEntity.ok(ApiResponse.success(
                     "Order with id " + id + "has been soft deleted.",

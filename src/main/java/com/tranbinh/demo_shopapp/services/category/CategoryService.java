@@ -16,24 +16,22 @@ public class CategoryService implements ICategoryService {
     private final CategoryRepository categoryRepository;
 
     @Override
-    public CategoryDTO createCategory(CategoryDTO categoryDTO) {
+    public Category createCategory(CategoryDTO categoryDTO) {
         if (categoryDTO.getId() != null) {
             throw new IllegalArgumentException("Category ID must be null when creating a new category");
         }
 
         Category newCategory = Category.builder()
                 .name(categoryDTO.getName()).build();
-        categoryRepository.save(newCategory);
-        return CategoryDTO.fromEntity(newCategory);
+        return categoryRepository.save(newCategory);
     }
 
     @Override
-    public CategoryDTO updateCategory(Long id, CategoryDTO categoryDTO) throws DataNotFoundException {
+    public Category updateCategory(Long id, CategoryDTO categoryDTO) throws DataNotFoundException {
         Category existingCategory = categoryRepository.findById(id)
                 .orElseThrow(() -> new DataNotFoundException("Category not found with id: " + id));
         existingCategory.setName(categoryDTO.getName());
-        Category updatedCategory = categoryRepository.save(existingCategory);
-        return CategoryDTO.fromEntity(updatedCategory);
+        return categoryRepository.save(existingCategory);
     }
 
     @Override
@@ -45,17 +43,13 @@ public class CategoryService implements ICategoryService {
     }
 
     @Override
-    public List<CategoryDTO> getAllCategories() {
-        List<Category> categories = categoryRepository.findAll();
-        return categories.stream()
-                .map(CategoryDTO::fromEntity)
-                .toList();
+    public List<Category> getAllCategories() {
+        return categoryRepository.findAll();
     }
 
     @Override
-    public CategoryDTO getCategoryById(Long id) throws DataNotFoundException {
-        Category category = categoryRepository.findById(id)
-                .orElseThrow(() -> new DataNotFoundException("Category not found"));
-        return CategoryDTO.fromEntity(category);
+    public Category getCategoryById(Long id) throws DataNotFoundException {
+        return categoryRepository.findById(id)
+                .orElseThrow(() -> new DataNotFoundException("Category not found with id: " + id));
     }
 }
